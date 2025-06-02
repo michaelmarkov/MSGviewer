@@ -1,103 +1,247 @@
-import Image from "next/image";
+'use client';
 
+import { useState, useCallback } from 'react';
+import { useDropzone } from 'react-dropzone';
+import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { toast } from 'sonner';
+import { parseMSGFile, MSGContent } from '@/lib/msg-parser';
+import DOMPurify from 'dompurify';
+
+/**
+ * Checks if content contains HTML tags
+ */
+function isHTML(content: string): boolean {
+  return /<\/?[a-z][\s\S]*>/i.test(content);
+}
+
+/**
+ * Sanitizes HTML content for safe rendering
+ */
+function sanitizeHTML(html: string): string {
+  return DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: ['p', 'br', 'div', 'span', 'strong', 'em', 'b', 'i', 'u', 'a', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'table', 'tr', 'td', 'th', 'tbody', 'thead'],
+    ALLOWED_ATTR: ['href', 'title', 'style']
+  });
+}
+
+/**
+ * Main application component for MSG File Viewer
+ * Provides drag-and-drop interface for uploading MSG files and displays headers + email content
+ */
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  // State to store parsed MSG file content (headers, body, subject, etc.)
+  const [msgContent, setMsgContent] = useState<MSGContent | null>(null);
+  
+  // State to store the search query for filtering headers
+  const [searchQuery, setSearchQuery] = useState('');
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  /**
+   * Handles file drop/upload when user drops an MSG file
+   * Parses the file and updates the UI with the content
+   * @param acceptedFiles - Array of files dropped by user (we only use the first one)
+   */
+  const onDrop = useCallback(async (acceptedFiles: File[]) => {
+    const file = acceptedFiles[0];
+    if (!file) return;
+
+    try {
+      // Parse the MSG file and extract headers/content
+      const parsedContent = await parseMSGFile(file);
+      setMsgContent(parsedContent);
+      toast.success('File parsed successfully');
+    } catch (error: unknown) {
+      // Show user-friendly error message with details
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      toast.error('Failed to parse file: ' + errorMessage);
+      console.error('MSG parse error:', error);
+    }
+  }, []);
+
+  /**
+   * Configure react-dropzone for file upload functionality
+   * Accepts only .msg files and handles drag/drop + click to select
+   */
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      'application/vnd.ms-outlook': ['.msg'] // Only accept MSG files
+    },
+    multiple: false // Only allow single file upload
+  });
+
+  /**
+   * Filter headers based on search query and exclude unwanted headers
+   * Filters out:
+   * - Headers starting with "<" (HTML tags)
+   * - Headers starting with any whitespace (spaces, tabs, etc.)
+   * - Then applies search query filter
+   */
+  const filteredHeaders = msgContent?.headers
+    .filter(header => {
+      // Remove headers starting with "<" (HTML tags)
+      if (header.name.startsWith('<')) return false;
+      
+      // Remove headers starting with any whitespace characters
+      // Check if trimmed version is different from original (indicates leading whitespace)
+      if (header.name.trim() !== header.name) return false;
+      
+      // Also explicitly check for empty or whitespace-only names
+      if (header.name.trim() === '') return false;
+      
+      return true;
+    })
+    .filter(header =>
+      header.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      header.value.toLowerCase().includes(searchQuery.toLowerCase())
+    ) || [];
+
+  return (
+    <main className="container mx-auto p-4 min-h-screen flex flex-col gap-6">
+      <h1 className="text-3xl font-bold">MSG File Viewer by mmarkov</h1>
+      
+      {/* File Upload Area */}
+      <Card className="p-6">
+        <div
+          {...getRootProps()}
+          className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors
+            ${isDragActive ? 'border-primary bg-primary/10' : 'border-gray-300 hover:border-primary'}`}
+        >
+          <input {...getInputProps()} />
+          {isDragActive ? (
+            <p>Drop the MSG file here...</p>
+          ) : (
+            <p>Drag and drop an MSG file here, or click to select one</p>
+          )}
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+      </Card>
+
+      {/* Content Display - Only shown when file is loaded */}
+      {msgContent && (
+        <>
+          {/* Headers Table Section - Full Width */}
+          <Card className="p-6 flex flex-col">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold">Headers</h2>
+              <span className="text-sm text-gray-500">
+                {filteredHeaders.length} header{filteredHeaders.length !== 1 ? 's' : ''}
+              </span>
+            </div>
+            
+            {/* Search Input for filtering headers */}
+            <div className="mb-4">
+              <Input
+                type="text"
+                placeholder="Search headers..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="max-w-sm"
+              />
+            </div>
+
+            {/* Headers Table */}
+            <div className="flex-1 overflow-auto border rounded-lg">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-gray-50">
+                    <TableHead className="w-[300px] font-semibold text-gray-900 p-4">
+                      Header Name
+                    </TableHead>
+                    <TableHead className="font-semibold text-gray-900 p-4">
+                      Value
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredHeaders.length > 0 ? (
+                    filteredHeaders.map((header, index) => (
+                      <TableRow key={index} className="hover:bg-gray-50 transition-colors">
+                        <TableCell 
+                          className="font-medium text-sm p-4 border-r bg-gray-25 max-w-[300px]" 
+                          title={header.name}
+                        >
+                          <div className="truncate font-mono text-blue-700">
+                            {header.name.trimStart()}
+                          </div>
+                        </TableCell>
+                        <TableCell 
+                          className="text-sm p-4 break-words" 
+                          title={header.value}
+                        >
+                          <div className="max-w-full">
+                            {header.value}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={2} className="text-center p-8 text-gray-500">
+                        {searchQuery ? 'No headers match your search' : 'No headers found'}
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </Card>
+
+          {/* Email Content Section - Below Headers */}
+          <Card className="p-6">
+            <h2 className="text-xl font-semibold mb-4">Email Content</h2>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <h3 className="font-medium text-sm text-gray-500 mb-1">Subject</h3>
+                  <p className="p-2 bg-gray-50 rounded">{msgContent.subject || 'No subject'}</p>
+                </div>
+                <div>
+                  <h3 className="font-medium text-sm text-gray-500 mb-1">Date</h3>
+                  <p className="p-2 bg-gray-50 rounded">{msgContent.date || 'No date'}</p>
+                </div>
+                <div>
+                  <h3 className="font-medium text-sm text-gray-500 mb-1">From</h3>
+                  <p className="p-2 bg-gray-50 rounded">{msgContent.from || 'No sender'}</p>
+                </div>
+                <div>
+                  <h3 className="font-medium text-sm text-gray-500 mb-1">To</h3>
+                  <p className="p-2 bg-gray-50 rounded">{msgContent.to || 'No recipients'}</p>
+                </div>
+              </div>
+              
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <h3 className="font-medium text-sm text-gray-500">Body</h3>
+                  {msgContent.body && isHTML(msgContent.body) && (
+                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">HTML</span>
+                  )}
+                </div>
+                <div className="p-4 bg-gray-50 rounded-lg border max-h-96 overflow-y-auto">
+                  {msgContent.body ? (
+                    isHTML(msgContent.body) ? (
+                      // Render HTML content
+                      <div 
+                        className="prose prose-sm max-w-none"
+                        dangerouslySetInnerHTML={{ 
+                          __html: sanitizeHTML(msgContent.body) 
+                        }}
+                      />
+                    ) : (
+                      // Render plain text content
+                      <div className="whitespace-pre-wrap text-sm">
+                        {msgContent.body}
+                      </div>
+                    )
+                  ) : (
+                    <p className="text-gray-500 italic">No email body content</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </Card>
+        </>
+      )}
+    </main>
   );
 }
