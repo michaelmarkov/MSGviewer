@@ -1,180 +1,149 @@
 # MSG File Viewer
 
-A modern, web-based viewer for Microsoft Outlook MSG files that extracts and displays email headers and content in a clean, searchable interface.
+A modern, web-based viewer for Microsoft Outlook MSG files with comprehensive header analysis and HTML email rendering. Built as a static site for easy deployment anywhere.
 
-![MSG File Viewer](https://img.shields.io/badge/Next.js-14-black?style=flat-square&logo=next.js)
-![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=flat-square&logo=typescript)
-![Tailwind CSS](https://img.shields.io/badge/Tailwind-CSS-38B2AC?style=flat-square&logo=tailwind-css)
+## 🌟 Features
 
-## ✨ Features
+- **Drag & Drop Upload**: Simply drag MSG files into the browser
+- **Header Analysis**: View all email headers with search and filtering
+- **HTML Email Rendering**: Safe rendering of HTML email content with XSS protection
+- **Atlassian Headers**: Specifically designed to handle Atlassian email headers
+- **Client-Side Processing**: All processing happens in your browser for privacy
+- **Responsive Design**: Works on desktop and mobile devices
+- **Static Site**: No server required - deploy anywhere
 
-- 🔍 **Header Analysis** - View and search all email headers including Atlassian headers
-- 📧 **Email Content Display** - Renders both HTML and plain text email bodies
-- 🎯 **Smart Filtering** - Filter out corrupted headers and search through content
-- 🔒 **Secure HTML Rendering** - Safe HTML parsing with XSS protection
-- 📱 **Responsive Design** - Works on desktop and mobile devices
-- 🚀 **Client-Side Processing** - No server uploads, complete privacy
-- 💫 **Modern UI** - Beautiful interface built with Shadcn UI components
+## 🚀 Live Demo
 
-## 🖥️ Live Demo
-
-**[Try it live on Vercel →](https://msg-144e4fzu5-michael-markovs-projects.vercel.app)**
-
-## 🚀 Quick Start
-
-### Prerequisites
-
-- Node.js 18+ 
-- npm, yarn, or pnpm
-
-### Installation
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/yourusername/msg-file-viewer.git
-   cd msg-file-viewer
-   ```
-
-2. **Install dependencies**
-   ```bash
-   npm install
-   # or
-   yarn install
-   # or
-   pnpm install
-   ```
-
-3. **Run the development server**
-   ```bash
-   npm run dev
-   # or
-   yarn dev
-   # or
-   pnpm dev
-   ```
-
-4. **Open your browser**
-   Navigate to [http://localhost:3000](http://localhost:3000)
-
-## 📖 Usage
-
-1. **Upload MSG File**: Drag and drop an MSG file onto the upload area or click to browse
-2. **View Headers**: Browse through filtered email headers in the table
-3. **Search Headers**: Use the search box to filter headers by name or value
-4. **Read Content**: View the formatted email content below the headers
-
-### Supported Formats
-
-- `.msg` - Microsoft Outlook Message files
-- Handles both HTML and plain text email bodies
-- Extracts all standard and custom headers (including Atlassian headers)
-
-## 🏗️ Project Structure
-
-```
-src/
-├── app/
-│   ├── page.tsx           # Main application component
-│   ├── layout.tsx         # Root layout with providers
-│   └── globals.css        # Global styles
-├── lib/
-│   ├── msg-parser.ts      # MSG file parsing logic
-│   ├── utils.ts          # Utility functions
-│   └── msgreader.d.ts    # Type declarations
-└── components/
-    └── ui/               # Shadcn UI components
-```
+Visit the live application: [MSG File Viewer](https://msg-144e4fzu5-michael-markovs-projects.vercel.app)
 
 ## 🛠️ Tech Stack
 
-- **Framework**: [Next.js 14](https://nextjs.org/) with App Router
-- **Language**: [TypeScript](https://www.typescriptlang.org/)
-- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
-- **UI Components**: [Shadcn UI](https://ui.shadcn.com/)
-- **MSG Parsing**: [@kenjiuno/msgreader](https://www.npmjs.com/package/@kenjiuno/msgreader)
-- **HTML Sanitization**: [DOMPurify](https://github.com/cure53/DOMPurify)
-- **File Upload**: [react-dropzone](https://react-dropzone.js.org/)
+- **Frontend**: React 18 + TypeScript
+- **Build Tool**: Vite
+- **Styling**: Tailwind CSS + Shadcn UI
+- **MSG Parsing**: @kenjiuno/msgreader
+- **HTML Sanitization**: DOMPurify
+- **File Upload**: react-dropzone
+- **Notifications**: Sonner
 
-## 🚀 Deployment
+## 📦 Installation
 
-### Deploy to Vercel (Recommended)
+### Prerequisites
+- Node.js 18+ 
+- npm or yarn
 
-1. **Using Vercel CLI**
-   ```bash
-   npm install -g vercel
-   vercel
-   ```
+### Setup
+```bash
+# Clone the repository
+git clone <repository-url>
+cd msg-file-viewer
 
-2. **Using GitHub Integration**
-   - Push your code to GitHub
-   - Connect your repository to [Vercel](https://vercel.com)
-   - Deploy automatically on every push
+# Install dependencies
+npm install
 
-### Deploy to Netlify
+# Start development server
+npm run dev
 
-1. **Build the project**
-   ```bash
-   npm run build
-   ```
+# Build for production
+npm run build
 
-2. **Deploy to Netlify**
-   - Drag the `out` folder to [Netlify Drop](https://app.netlify.com/drop)
-   - Or connect your GitHub repository
+# Preview production build
+npm run preview
+```
 
-### Deploy to Other Platforms
-
-The app can be deployed to any platform that supports Node.js or static sites:
-- Cloudflare Pages
-- GitHub Pages
-- Railway
-- Render
-
-## 🔧 Development
+## 🏗️ Development
 
 ### Available Scripts
 
-- `npm run dev` - Start development server
+- `npm run dev` - Start development server (http://localhost:5173)
 - `npm run build` - Build for production
-- `npm run start` - Start production server
+- `npm run preview` - Preview production build
 - `npm run lint` - Run ESLint
 
-### Environment Variables
+### Project Structure
 
-No environment variables are required. The app runs entirely client-side.
+```
+src/
+├── components/ui/     # Shadcn UI components
+├── lib/              # Utilities and MSG parser
+├── App.tsx           # Main application component
+├── main.tsx          # Application entry point
+└── index.css         # Global styles
+```
 
-## 🛡️ Security
+## 🚀 Deployment
 
-- **Client-Side Processing**: MSG files are processed entirely in the browser
+This is a static site that can be deployed anywhere:
+
+### Vercel (Recommended)
+```bash
+npm install -g vercel
+vercel --prod
+```
+
+### Netlify
+1. Connect your GitHub repository
+2. Set build command: `npm run build`
+3. Set publish directory: `dist`
+
+### GitHub Pages
+```bash
+npm run build
+# Upload the dist/ folder to your GitHub Pages repository
+```
+
+### Any Static Host
+```bash
+npm run build
+# Upload the contents of dist/ to your web server
+```
+
+## 🔒 Privacy & Security
+
+- **Client-Side Only**: All MSG file processing happens in your browser
 - **No Data Upload**: Files never leave your device
 - **XSS Protection**: HTML content is sanitized before rendering
-- **Safe Parsing**: Only safe HTML tags and attributes are allowed
+- **No Tracking**: No analytics or tracking scripts
+
+## 📋 Supported Features
+
+### MSG File Support
+- ✅ Email headers (including custom Atlassian headers)
+- ✅ Email body (plain text and HTML)
+- ✅ Subject, From, To, Date fields
+- ✅ Binary MSG file format parsing
+
+### Header Filtering
+- ✅ Search headers by name or value
+- ✅ Automatic filtering of corrupted/invalid headers
+- ✅ Clean display of header names and values
+
+### HTML Rendering
+- ✅ Safe HTML rendering with DOMPurify
+- ✅ Automatic HTML detection
+- ✅ Fallback to plain text for non-HTML content
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
-
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+2. Create a feature branch: `git checkout -b feature-name`
+3. Make your changes
+4. Run tests: `npm run lint`
+5. Commit changes: `git commit -m 'Add feature'`
+6. Push to branch: `git push origin feature-name`
+7. Submit a pull request
 
-## 📝 License
+## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
-- [Kenji Uno](https://github.com/kenjiuno) for the excellent msgreader library
-- [Shadcn](https://github.com/shadcn) for the beautiful UI components
-- [Vercel](https://vercel.com) for hosting and deployment
-
-## 📞 Support
-
-If you have any questions or issues, please:
-- Open an [issue](https://github.com/yourusername/msg-file-viewer/issues)
-- Check the [documentation](DEVELOPMENT_DOCS.md)
+- [msgreader](https://github.com/kenjiuno/msgreader) for MSG file parsing
+- [Shadcn UI](https://ui.shadcn.com/) for beautiful components
+- [Tailwind CSS](https://tailwindcss.com/) for styling
+- [DOMPurify](https://github.com/cure53/DOMPurify) for XSS protection
 
 ---
 
-**Made with ❤️ by [Michael Markov](https://github.com/yourusername)**
+**Made with ❤️ by mmarkov**
