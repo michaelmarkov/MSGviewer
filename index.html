@@ -2,11 +2,22 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <!-- Security: Content Security Policy to prevent XSS attacks -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'self';">
+    <!-- Security: Prevent MIME type sniffing -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <!-- Security: Prevent clickjacking -->
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <!-- Security: Enable XSS protection -->
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+    <!-- Security: Referrer policy -->
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>MSG File Viewer</title>
-    <meta name="description" content="A modern web-based viewer for Microsoft Outlook MSG files with header analysis and HTML rendering">
-    <script type="module" crossorigin src="./assets/index-FSKvTcjH.js"></script>
+    <meta name="description" content="A secure web-based viewer for Microsoft Outlook MSG files with header analysis and HTML rendering">
+    <script type="module" crossorigin src="./assets/index-BVZNDMEy.js"></script>
   </head>
   <body>
     <div id="root"></div>
