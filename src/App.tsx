@@ -153,9 +153,6 @@ function App() {
             />
           )}
 
-          {/* Headers Table */}
-          <HeadersTable headers={filteredHeaders} />
-
           {/* Email Content Preview */}
           {msgContent.body && previewMode !== 'none' && (
             <EmailContentPreview
@@ -164,6 +161,10 @@ function App() {
               isHTML={isHTML(msgContent.body)}
             />
           )}
+          <div className="mb-5">  </div>
+          {/* Headers Table */}
+          <HeadersTable headers={filteredHeaders} />
+
         </>
       )}
     </div>

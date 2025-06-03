@@ -12,7 +12,7 @@ interface HeadersTableProps {
 const HeadersTable: React.FC<HeadersTableProps> = ({ headers }) => {
   return (
     <div style={{ marginBottom: '30px' }}>
-      <h2>Email Headers ({headers.length})</h2>
+      <h2 className="text-lg font-semibold mb-2">Email Headers ({headers.length})</h2>
       <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #ddd' }}>
         <thead>
           <tr style={{ backgroundColor: '#f5f5f5' }}>

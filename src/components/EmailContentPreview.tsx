@@ -55,7 +55,7 @@ const EmailContentPreview: React.FC<EmailContentPreviewProps> = ({ body, preview
 
   return (
     <div>
-      <h2>Email Content Preview</h2>
+      <h2 className="text-lg font-semibold mb-2">Email Content Preview</h2>
       {previewMode === 'text' && (
         <div className="p-4 bg-gray-100 rounded border max-h-96 overflow-auto whitespace-pre-wrap font-mono text-sm">
           {isHTML ? htmlToPlainText(body) : body}
