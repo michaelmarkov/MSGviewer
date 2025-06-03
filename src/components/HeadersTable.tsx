@@ -1,4 +1,5 @@
 import React from 'react';
+import DOMPurify from 'dompurify';
 
 interface Header {
   name: string;
@@ -10,6 +11,15 @@ interface HeadersTableProps {
 }
 
 const HeadersTable: React.FC<HeadersTableProps> = ({ headers }) => {
+  const sanitizeText = (text: string): string => {
+    // Use DOMPurify to remove any potential XSS while preserving text content
+    return DOMPurify.sanitize(text, { 
+      ALLOWED_TAGS: [], 
+      ALLOWED_ATTR: [],
+      KEEP_CONTENT: true
+    });
+  };
+
   return (
     <div style={{ marginBottom: '30px' }}>
       <h2 className="text-lg font-semibold mb-2">Email Headers ({headers.length})</h2>
@@ -36,14 +46,14 @@ const HeadersTable: React.FC<HeadersTableProps> = ({ headers }) => {
                 overflow: 'hidden',
                 textOverflow: 'ellipsis'
               }}>
-                {header.name.trimStart()}
+                {sanitizeText(header.name.trimStart())}
               </td>
               <td style={{ 
                 padding: '8px 12px', 
                 border: '1px solid #ddd',
                 wordBreak: 'break-word'
               }}>
-                {header.value}
+                {sanitizeText(header.value)}
               </td>
             </tr>
           ))}

@@ -1,4 +1,5 @@
 import React from 'react';
+import DOMPurify from 'dompurify';
 
 interface EmailContentPreviewProps {
   body: string;
@@ -8,21 +9,22 @@ interface EmailContentPreviewProps {
 
 const EmailContentPreview: React.FC<EmailContentPreviewProps> = ({ body, previewMode, isHTML }) => {
   const htmlToPlainText = (html: string): string => {
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = html;
-    const text = tempDiv.textContent || tempDiv.innerText || '';
-    tempDiv.remove();
-    return text.trim();
+    // Use DOMPurify to safely strip HTML tags
+    const sanitized = DOMPurify.sanitize(html, { 
+      ALLOWED_TAGS: [], 
+      ALLOWED_ATTR: [],
+      KEEP_CONTENT: true
+    });
+    return sanitized.trim();
   };
 
   const createSafeHTMLPreview = (html: string): string => {
-    const cleaned = html
-      .replace(/<script[^>]*>.*?<\/script>/gis, '')
-      .replace(/<style[^>]*>.*?<\/style>/gis, '')
-      .replace(/on\w+\s*=\s*['"][^'"]*['"]/gi, '')
-      .replace(/javascript:/gi, '')
-      .replace(/data:/gi, '')
-      .replace(/style\s*=\s*['"][^'"]*['"]/gi, '');
+    // Use DOMPurify with strict sanitization
+    const cleaned = DOMPurify.sanitize(html, {
+      FORBID_TAGS: ['script', 'style', 'iframe', 'object', 'embed', 'form', 'input', 'button'],
+      FORBID_ATTR: ['onload', 'onerror', 'onclick', 'onmouseover', 'onfocus', 'onblur', 'onchange', 'onsubmit'],
+      ALLOW_DATA_ATTR: false
+    });
 
     return `
       <!DOCTYPE html>
@@ -30,6 +32,7 @@ const EmailContentPreview: React.FC<EmailContentPreviewProps> = ({ body, preview
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data: https:; font-src 'none';">
         <style>
           body { 
             font-family: Arial, sans-serif; 
@@ -68,7 +71,7 @@ const EmailContentPreview: React.FC<EmailContentPreviewProps> = ({ body, preview
           </div>
           <iframe
             className="w-full h-96 border-none bg-white"
-            sandbox=""
+            sandbox="allow-same-origin"
             srcDoc={createSafeHTMLPreview(body)}
             title="Email Content Preview"
           />
