@@ -1,5 +1,32 @@
 import MsgReader from '@kenjiuno/msgreader';
 import { MSGHeader, MSGContent } from './types';
+import { parseEMLFile } from './eml-parser';
+
+interface MSGRecipient {
+  recipType?: string;
+  email?: string;
+  name?: string;
+}
+
+interface MSGData {
+  headers?: string;
+  transportMessageHeaders?: string;
+  internetMessageHeaders?: string;
+  subject?: string;
+  senderName?: string;
+  senderEmail?: string;
+  messageDeliveryTime?: string;
+  clientSubmitTime?: string;
+  messageId?: string;
+  conversationTopic?: string;
+  conversationIndex?: string;
+  recipients?: MSGRecipient[];
+  body?: string;
+  bodyHtml?: string;
+  html?: Uint8Array;
+  compressedRtf?: string;
+  [key: string]: unknown;
+}
 
 /**
  * Parses an MSG file and extracts headers and content using @kenjiuno/msgreader
@@ -46,16 +73,8 @@ export async function parseMSGFile(file: File): Promise<MSGContent> {
         if (isEML) {
           // Parse EML file (text-based)
           const content = result as string;
-          // const parsedContent = parseEMLFile(content);
-          resolve({
-            headers: [],
-            body: content,
-            subject: '',
-            from: '',
-            to: '',
-            date: '',
-            fileType: 'EML'
-          });
+          const parsedContent = parseEMLFile(content);
+          resolve(parsedContent);
         } else {
           // Parse MSG file (binary)
           const buffer = result as ArrayBuffer;
@@ -66,19 +85,40 @@ export async function parseMSGFile(file: File): Promise<MSGContent> {
           
           // Create MSG reader instance
           const msgReader = new MsgReader(buffer);
-          const msgData = msgReader.getFileData();
+          const msgData = msgReader.getFileData() as unknown as MSGData;
           
-          // Remove debug logging for security
-          // Only log in development environment if needed
+          // Debug: Log available properties to understand MSG structure
           if (process.env.NODE_ENV === 'development') {
             console.log('MSG Data keys:', Object.keys(msgData));
+            console.log('Headers property exists:', 'headers' in msgData);
+            console.log('Headers value:', msgData.headers);
+            console.log('Available properties with values:');
+            Object.keys(msgData).forEach(key => {
+              const value = msgData[key];
+              if (value && typeof value === 'string' && value.length < 200) {
+                console.log(`  ${key}:`, value);
+              } else if (value) {
+                console.log(`  ${key}:`, typeof value, Array.isArray(value) ? `Array(${value.length})` : '');
+              }
+            });
           }
           
           // Parse headers from the headers string if available
           const headers: MSGHeader[] = [];
+          
+          // Try multiple sources for headers
+          let headerString = '';
           if (msgData.headers) {
+            headerString = msgData.headers;
+          } else if (msgData.transportMessageHeaders) {
+            headerString = msgData.transportMessageHeaders;
+          } else if (msgData.internetMessageHeaders) {
+            headerString = msgData.internetMessageHeaders;
+          }
+          
+          if (headerString) {
             // The headers come as a single string with \r\n separators
-            const headerLines = msgData.headers.split(/\r?\n/);
+            const headerLines = headerString.split(/\r?\n/);
             
             for (const line of headerLines) {
               // Skip empty lines
@@ -91,7 +131,7 @@ export async function parseMSGFile(file: File): Promise<MSGContent> {
                 const value = line.substring(colonIndex + 1).trim();
                 
                 // Security: Sanitize header names and values
-                const sanitizedName = name.replace(/[<>]/g, '').substring(0, 500); // Limit length
+                const sanitizedName = name.trim().substring(0, 500); // Limit length
                 const sanitizedValue = value.substring(0, 2000); // Limit length
                 
                 // Only add if both name and value exist
@@ -100,22 +140,52 @@ export async function parseMSGFile(file: File): Promise<MSGContent> {
                 }
               }
             }
+          } else {
+            // If no header string found, try to build headers from individual properties
+            const propertyMappings = [
+              { prop: 'subject', name: 'Subject' },
+              { prop: 'senderName', name: 'From-Name' },
+              { prop: 'senderEmail', name: 'From' },
+              { prop: 'messageDeliveryTime', name: 'Date' },
+              { prop: 'clientSubmitTime', name: 'Date-Submitted' },
+              { prop: 'messageId', name: 'Message-ID' },
+              { prop: 'conversationTopic', name: 'Thread-Topic' },
+              { prop: 'conversationIndex', name: 'Thread-Index' }
+            ];
+            
+            propertyMappings.forEach(({ prop, name }) => {
+              const value = msgData[prop as keyof MSGData];
+              if (value && String(value).trim()) {
+                headers.push({ 
+                  name, 
+                  value: String(value).trim().substring(0, 2000) 
+                });
+              }
+            });
+            
+            // Add recipient headers
+            if (msgData.recipients && Array.isArray(msgData.recipients)) {
+              const toRecipients = msgData.recipients
+                .filter((r: MSGRecipient) => r.recipType === 'to' || !r.recipType)
+                .map((r: MSGRecipient) => r.email || r.name)
+                .filter(Boolean)
+                .slice(0, 10);
+              
+              if (toRecipients.length > 0) {
+                headers.push({ name: 'To', value: toRecipients.join(', ') });
+              }
+              
+              const ccRecipients = msgData.recipients
+                .filter((r: MSGRecipient) => r.recipType === 'cc')
+                .map((r: MSGRecipient) => r.email || r.name)
+                .filter(Boolean)
+                .slice(0, 10);
+              
+              if (ccRecipients.length > 0) {
+                headers.push({ name: 'Cc', value: ccRecipients.join(', ') });
+              }
+            }
           }
-          
-          // Extract recipient information
-          const recipients = msgData.recipients || [];
-          const toEmails = recipients
-            .filter((r: unknown) => {
-              const recipient = r as { recipType?: string };
-              return recipient.recipType === 'to' || !recipient.recipType;
-            })
-            .map((r: unknown) => {
-              const recipient = r as { email?: string; name?: string };
-              return recipient.email || recipient.name;
-            })
-            .filter(Boolean)
-            .slice(0, 10) // Security: Limit number of recipients to prevent DoS
-            .join(', ');
           
           // Extract body content - try multiple sources
           let body = '';
@@ -148,7 +218,7 @@ export async function parseMSGFile(file: File): Promise<MSGContent> {
             body,
             subject: (msgData.subject || '').substring(0, 500), // Limit subject length
             from: (msgData.senderEmail || msgData.senderName || '').substring(0, 200),
-            to: toEmails,
+            to: (msgData.recipients || []).map((r: MSGRecipient) => r.email || r.name).filter(Boolean).slice(0, 10).join(', '),
             date: (msgData.messageDeliveryTime || msgData.clientSubmitTime || '').substring(0, 100),
             fileType: 'MSG'
           });

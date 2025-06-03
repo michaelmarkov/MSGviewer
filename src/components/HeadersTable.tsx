@@ -1,5 +1,4 @@
 import React from 'react';
-import DOMPurify from 'dompurify';
 
 interface Header {
   name: string;
@@ -11,13 +10,15 @@ interface HeadersTableProps {
 }
 
 const HeadersTable: React.FC<HeadersTableProps> = ({ headers }) => {
-  const sanitizeText = (text: string): string => {
-    // Use DOMPurify to remove any potential XSS while preserving text content
-    return DOMPurify.sanitize(text, { 
-      ALLOWED_TAGS: [], 
-      ALLOWED_ATTR: [],
-      KEEP_CONTENT: true
-    });
+  const sanitizeHeaderText = (text: string): string => {
+    // For email headers, we want to preserve email-specific formatting like angle brackets
+    // but prevent actual script injection. Since headers are displayed as text content
+    // (not innerHTML), React automatically escapes them. We just need basic cleanup.
+    return text
+      .replace(/javascript:/gi, '') // Remove javascript: URLs
+      .replace(/data:text\/html/gi, '') // Remove data URLs that could contain HTML
+      .replace(/on\w+\s*=/gi, '') // Remove event handlers like onclick=
+      .trim();
   };
 
   return (
@@ -46,14 +47,14 @@ const HeadersTable: React.FC<HeadersTableProps> = ({ headers }) => {
                 overflow: 'hidden',
                 textOverflow: 'ellipsis'
               }}>
-                {sanitizeText(header.name.trimStart())}
+                {sanitizeHeaderText(header.name.trimStart())}
               </td>
               <td style={{ 
                 padding: '8px 12px', 
                 border: '1px solid #ddd',
                 wordBreak: 'break-word'
               }}>
-                {sanitizeText(header.value)}
+                {sanitizeHeaderText(header.value)}
               </td>
             </tr>
           ))}

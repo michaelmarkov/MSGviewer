@@ -30,7 +30,7 @@ export function parseEMLFile(content: string): MSGContent {
       if (line.trim() === '') {
         // Save the last header if we have one
         if (currentHeaderName && currentHeaderValue) {
-          const sanitizedName = currentHeaderName.replace(/[<>]/g, '').substring(0, 500);
+          const sanitizedName = currentHeaderName.trim().substring(0, 500);
           const sanitizedValue = currentHeaderValue.trim().substring(0, 2000);
           
           if (sanitizedName && sanitizedValue) {
@@ -52,7 +52,7 @@ export function parseEMLFile(content: string): MSGContent {
       if (line.match(/^[^\s]+:/) && !line.match(/^\s/)) {
         // Save previous header if exists
         if (currentHeaderName && currentHeaderValue) {
-          const sanitizedName = currentHeaderName.replace(/[<>]/g, '').substring(0, 500);
+          const sanitizedName = currentHeaderName.trim().substring(0, 500);
           const sanitizedValue = currentHeaderValue.trim().substring(0, 2000);
           
           if (sanitizedName && sanitizedValue) {
@@ -83,7 +83,7 @@ export function parseEMLFile(content: string): MSGContent {
 
   // Don't forget the last header if we ended in header section
   if (headerSection && currentHeaderName && currentHeaderValue) {
-    const sanitizedName = currentHeaderName.replace(/[<>]/g, '').substring(0, 500);
+    const sanitizedName = currentHeaderName.trim().substring(0, 500);
     const sanitizedValue = currentHeaderValue.trim().substring(0, 2000);
     
     if (sanitizedName && sanitizedValue) {
