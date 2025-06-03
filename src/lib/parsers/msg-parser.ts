@@ -46,8 +46,16 @@ export async function parseMSGFile(file: File): Promise<MSGContent> {
         if (isEML) {
           // Parse EML file (text-based)
           const content = result as string;
-          const parsedContent = parseEMLFile(content);
-          resolve(parsedContent);
+          // const parsedContent = parseEMLFile(content);
+          resolve({
+            headers: [],
+            body: content,
+            subject: '',
+            from: '',
+            to: '',
+            date: '',
+            fileType: 'EML'
+          });
         } else {
           // Parse MSG file (binary)
           const buffer = result as ArrayBuffer;
@@ -169,4 +177,6 @@ export async function parseMSGFile(file: File): Promise<MSGContent> {
       reader.readAsArrayBuffer(file); // MSG files are binary
     }
   });
-} 
+}
+
+export type { MSGContent }; 
